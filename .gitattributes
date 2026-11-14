@@ -1,0 +1,16 @@
+# Normalize line endings to LF in the repository, keep them as-is on Windows checkouts.
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff2 binary
+*.wasm binary
+*.zip binary
+
+# SQL dumps are text
+*.sql text eol=lf
