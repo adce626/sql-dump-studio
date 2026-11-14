@@ -1,22 +1,24 @@
 <div align="center">
 
-<img src="docs/02-table.png" alt="SQL Dump Studio — table browser" width="900" />
+<img src="docs/hero.svg" alt="SQL Dump Studio — open any SQL dump in your browser" width="100%" />
 
 # 🗄️ SQL Dump Studio
 
 **Open any SQL dump in your browser — explore the tables, run queries, and export the data.**
 *Nothing is ever uploaded. Parsing, indexing, querying and exporting all happen locally.*
 
-[![CI](https://github.com/adce626/sql-dump-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/adce626/sql-dump-studio/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-646CFF?style=flat-square)](LICENSE)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=20232A)](https://react.dev)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=20232A)](https://vite.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=20232A)](https://www.typescriptlang.org)
-[![SQLite](https://img.shields.io/badge/SQLite-WASM-003B57?style=flat-square&logo=sqlite&logoColor=20232A)](https://www.sqlite.org/wasm/)
-[![PWA](https://img.shields.io/badge/PWA-installable-5A3FD4?style=flat-square)](https://web.dev/articles/pwa)
-[![100% local](https://img.shields.io/badge/100%25-local-first-22C55E?style=flat-square)](#privacy)
-
 </div>
+
+---
+
+## 🎬 See it in action
+
+<p align="center">
+  <img src="docs/demo.gif" alt="SQL Dump Studio demo — searching, sorting and running a query" width="880" />
+</p>
+
+<sub>Searching inside a table → sorting by a column → running a query in the SQL editor.
+Real capture from the running app, no mock-ups.</sub>
 
 ---
 
@@ -154,6 +156,13 @@ to a server — there is no backend at all. Once installed as a PWA, the whole a
 
 `React 19` · `Vite 8` · `TypeScript` · `Tailwind CSS v4` · `@sqlite.org/sqlite-wasm` (OPFS) ·
 `@tanstack/react-virtual` · `React Flow` · `Prism.js` · `fflate` · `vite-plugin-pwa`
+
+---
+
+## 🎨 Credits
+
+The animated header (`docs/hero.svg`) is a hand-written self-contained SVG, and `docs/demo.gif` is
+generated from real screen captures with `scripts/make-demo-gif.mjs` (`gifenc` + `pngjs`).
 
 ---
 
