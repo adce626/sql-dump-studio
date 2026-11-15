@@ -7,6 +7,8 @@
 **Open any SQL dump in your browser — explore the tables, run queries, and export the data.**
 *Nothing is ever uploaded. Parsing, indexing, querying and exporting all happen locally.*
 
+[Download the latest release](https://github.com/adce626/sql-dump-studio/releases/latest) — or run it yourself in two commands below.
+
 </div>
 
 ---
