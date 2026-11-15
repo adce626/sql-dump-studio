@@ -1,0 +1,25 @@
+# Netlify / Cloudflare Pages headers
+# Copy this file as `_headers` into the published folder (next to index.html).
+# The two COOP/COEP headers are required for SharedArrayBuffer, which the
+# SQLite WASM engine needs to store the imported database in OPFS
+# (persistent sessions). Without them the app still works, but it falls back
+# to an in-memory database.
+
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.wasm
+  Cache-Control: public, max-age=31536000, immutable
+
+/sw.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json

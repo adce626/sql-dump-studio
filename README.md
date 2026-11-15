@@ -94,6 +94,31 @@ test/fixtures/plain-dump.dump      # plain SQL text with a .dump extension (stil
 
 ---
 
+## Deploy
+
+The app is a completely static bundle: build it once and upload the contents of `dist/` to any host.
+
+```bash
+npm run build      # -> dist/  (the hosting helper files are copied in as well)
+```
+
+Ready-made configuration for the common hosts lives in `deploy/`:
+
+| Host | What to do |
+|---|---|
+| Netlify | Import the repository. Build command `npm run build`, publish directory `dist`. `deploy/netlify.toml` and `deploy/_headers` are already included. |
+| Cloudflare Pages | Build command `npm run build`, output directory `dist`. Upload `deploy/_headers` as `_headers` next to `index.html`. |
+| Vercel | Import the repository. `deploy/vercel.json` sets the build command, the output directory and the headers. |
+| GitHub Pages | Enable Pages with "GitHub Actions" as the source; the `Deploy to GitHub Pages` workflow publishes `dist/` on every push. |
+| Shared hosting / cPanel | Upload the **contents** of `dist/` into `public_html`. Every asset path is relative, so the app also works from a sub-folder. |
+
+The `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: credentialless`
+headers are part of every configuration. They are what keeps the imported database on disk
+(OPFS) instead of in memory. Hosts that do not allow custom headers (GitHub Pages, for
+example) still run the whole app - only the "remember the last opened file" feature is lost.
+
+---
+
 ## Supported file formats
 
 | Format | How it is handled |

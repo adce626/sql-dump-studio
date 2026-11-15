@@ -4,6 +4,9 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // Relative asset paths so the built app also works from a sub-folder
+  // (shared hosting in a sub-directory, GitHub Pages project pages, ...).
+  base: './',
   plugins: [
     react(),
     tailwindcss(),
@@ -21,9 +24,9 @@ export default defineConfig({
         theme_color: '#0b1220',
         background_color: '#0b1220',
         display: 'standalone',
-        start_url: '/',
+        start_url: './',
         icons: [
-          { src: '/icons.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+          { src: 'icons.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
         ],
       },
     }),
