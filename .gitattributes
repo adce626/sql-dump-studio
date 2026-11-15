@@ -11,6 +11,8 @@
 *.woff2 binary
 *.wasm binary
 *.zip binary
+*.sqlite binary
+*.db binary
 
 # SQL dumps are text
 *.sql text eol=lf

@@ -2,7 +2,7 @@
 
 <img src="docs/hero.svg" alt="SQL Dump Studio — open any SQL dump in your browser" width="100%" />
 
-# 🗄️ SQL Dump Studio
+# SQL Dump Studio
 
 **Open any SQL dump in your browser — explore the tables, run queries, and export the data.**
 *Nothing is ever uploaded. Parsing, indexing, querying and exporting all happen locally.*
@@ -11,36 +11,36 @@
 
 ---
 
-## 🎬 See it in action
+## See it in action
 
 <p align="center">
   <img src="docs/demo.gif" alt="SQL Dump Studio demo — searching, sorting and running a query" width="880" />
 </p>
 
-<sub>Searching inside a table → sorting by a column → running a query in the SQL editor.
+<sub>Searching inside a table, then sorting by a column, then running a query in the SQL editor.
 Real capture from the running app, no mock-ups.</sub>
 
 ---
 
-## ✨ Highlights
+## Highlights
 
-| | Feature | What it does |
-|---|---|---|
-| 📂 | **Open SQL dumps** | Drag & drop a `.sql` file (MySQL / PostgreSQL / SQL Server / SQLite) or a native `.sqlite` database |
-| 📊 | **Spreadsheet-style data grid** | Virtualized rows **and** columns, multi-column sorting, pinned columns, drag-to-resize, auto-fit, density modes, gridline toggle |
-| 🔎 | **Search** | Full-text search (FTS5) across every table, plus per-column quick filters with value counts and inline match highlighting |
-| 🧩 | **Relations** | Interactive ER diagram (declared foreign keys **and** inferred `x_id → x.id` links) |
-| 🧪 | **SQL editor** | Run real SQL against the imported data, autocomplete for tables/columns/keywords, and a one-key formatter |
-| 📈 | **Data analysis** | Per-column profiling (nulls %, distinct, min/max, avg, sum, top values), duplicate-row detection, and a side-by-side table diff |
-| 🖼️ | **Images & blobs** | BLOB columns are sniffed and rendered as real thumbnails with a lightbox, zoom and download (PNG, JPEG, GIF, WEBP, SVG …) |
-| 📤 | **Export** | CSV (UTF-8 BOM), JSON, NDJSON, SQL dump, XLSX (hand-written writer) — or a full **ZIP package** with `schema.sql`, per-table CSVs and the extracted images |
-| 🔗 | **Shareable views** | Every table view (sort, filters, density, column widths) can be encoded into a URL and shared |
-| ⌨️ | **Keyboard shortcuts** | `?` shows the full map — `g`+key navigation, `/` to search, `Ctrl+Shift+C` to copy rows |
-| 🌍 | **Bilingual & offline** | English ⇄ Arabic with full RTL/LTR mirroring, dark & light themes, self-hosted fonts, and a service-worker PWA |
+| Feature | What it does |
+|---|---|
+| **Open SQL dumps** | Drag & drop a `.sql` file (MySQL / PostgreSQL / SQL Server / SQLite) or a native `.sqlite` database |
+| **Spreadsheet-style data grid** | Virtualized rows **and** columns, multi-column sorting, pinned columns, drag-to-resize, auto-fit, density modes, gridline toggle |
+| **Search** | Full-text search (FTS5) across every table, plus per-column quick filters with value counts and inline match highlighting |
+| **Relations** | Interactive ER diagram (declared foreign keys **and** inferred `x_id` to `x.id` links) |
+| **SQL editor** | Run real SQL against the imported data, autocomplete for tables/columns/keywords, and a one-key formatter |
+| **Data analysis** | Per-column profiling (nulls %, distinct, min/max, avg, sum, top values), duplicate-row detection, and a side-by-side table diff |
+| **Images and blobs** | BLOB columns are sniffed and rendered as real thumbnails with a lightbox, zoom and download (PNG, JPEG, GIF, WEBP, SVG …) |
+| **Export** | CSV (UTF-8 BOM), JSON, NDJSON, SQL dump, XLSX (hand-written writer) — or a full **ZIP package** with `schema.sql`, per-table CSVs and the extracted images |
+| **Shareable views** | Every table view (sort, filters, density, column widths) can be encoded into a URL and shared |
+| **Keyboard shortcuts** | `?` shows the full map — `g`+key navigation, `/` to search, `Ctrl+Shift+C` to copy rows |
+| **Bilingual and offline** | English and Arabic with full RTL/LTR mirroring, dark and light themes, self-hosted fonts, and a service-worker PWA |
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 <table>
 <tr>
@@ -54,7 +54,7 @@ Real capture from the running app, no mock-ups.</sub>
 
 ---
 
-## 🚀 Quick start
+## Quick start
 
 ```bash
 git clone https://github.com/adce626/sql-dump-studio.git
@@ -64,7 +64,7 @@ npm run dev        # http://localhost:5173
 ```
 
 ```bash
-npm run build      # production bundle → dist/
+npm run build      # production bundle into dist/
 npm run preview    # serve the production build locally
 npm run lint       # oxlint
 ```
@@ -79,13 +79,14 @@ npm run lint       # oxlint
 test/fixtures/mysql-shop.sql       # MySQL: 4 tables, foreign keys, Arabic text
 test/fixtures/postgres-sports.sql  # PostgreSQL: COPY blocks
 test/fixtures/duplicates.sql       # duplicate rows + a second version of a table
-test/fixtures/wide-table.sql       # 60 columns — for the horizontal virtualization
+test/fixtures/wide-table.sql       # 60 columns - for the horizontal virtualization
 test/fixtures/mysql-images.sql     # BLOB images, data-URIs and a PDF
+test/fixtures/shop.sqlite          # native SQLite database (opens straight from the .db file)
 ```
 
 ---
 
-## 🧩 Supported dialects
+## Supported dialects
 
 | Dialect | Highlights |
 |---|---|
@@ -97,25 +98,25 @@ test/fixtures/mysql-images.sql     # BLOB images, data-URIs and a PDF
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 src/
-├── worker/                 # runs in a Web Worker — never blocks the UI
-│   ├── protocol.ts         # shared request/response contracts
-│   ├── worker.ts           # RPC entry point + session management
-│   ├── importer.ts         # streaming import of a dump into SQLite
-│   ├── queries.ts          # rows, search, relations, stats, analysis, diff
-│   ├── export.ts           # CSV / JSON / NDJSON / SQL / XLSX writers
-│   ├── package.ts          # full ZIP package builder
-│   ├── sqlite.ts           # sqlite-wasm bootstrap + OPFS helpers
-│   └── sql/                # the parser: splitter, ddl, dml, values, dialect, lex
-├── components/             # DataGrid (hand-written), ER diagram, SQL viewer, charts…
-├── pages/                  # Home, Tables, Table, Search, Relations, Editor, Compare, Stats
-├── i18n/                   # en.ts / ar.ts + provider (RTL & LTR)
-├── theme/                  # dark / light theme
-├── store/                  # data provider (sessions, file state)
-└── lib/                    # worker client, formatting, SQL formatter, share links
+|-- worker/                 # runs in a Web Worker - never blocks the UI
+|   |-- protocol.ts         # shared request/response contracts
+|   |-- worker.ts           # RPC entry point + session management
+|   |-- importer.ts         # streaming import of a dump into SQLite
+|   |-- queries.ts          # rows, search, relations, stats, analysis, diff
+|   |-- export.ts           # CSV / JSON / NDJSON / SQL / XLSX writers
+|   |-- package.ts          # full ZIP package builder
+|   |-- sqlite.ts           # sqlite-wasm bootstrap + OPFS helpers
+|   `-- sql/                # the parser: splitter, ddl, dml, values, dialect, lex
+|-- components/             # DataGrid (hand-written), ER diagram, SQL viewer, charts
+|-- pages/                  # Home, Tables, Table, Search, Relations, Editor, Compare, Stats
+|-- i18n/                   # en.ts / ar.ts + provider (RTL & LTR)
+|-- theme/                  # dark / light theme
+|-- store/                  # data provider (sessions, file state)
+`-- lib/                    # worker client, formatting, SQL formatter, share links
 ```
 
 **How it works**
@@ -132,7 +133,7 @@ Everything runs against SQLite compiled to WebAssembly, with the database persis
 
 ---
 
-## ⌨️ Keyboard shortcuts
+## Keyboard shortcuts
 
 | Shortcut | Action |
 | --- | --- |
@@ -140,32 +141,32 @@ Everything runs against SQLite compiled to WebAssembly, with the database persis
 | `/` or `Ctrl`/`Cmd` + `K` | Jump to search |
 | `Ctrl`/`Cmd` + `Shift` + `C` | Copy the selected rows |
 | `g` then `h` `t` `s` `r` `e` `c` `p` | Go to Home / Tables / Search / Relations / Editor / Compare / Statistics |
-| `↑` `↓` | Move the open row |
+| `ArrowUp` / `ArrowDown` | Move the open row |
 | `Esc` | Close the open panel |
 
 ---
 
-## 🔒 Privacy
+## Privacy
 
 Parsing, indexing, querying and exporting all happen **inside your browser**. No file is ever sent
 to a server — there is no backend at all. Once installed as a PWA, the whole app works offline.
 
 ---
 
-## 🧰 Tech stack
+## Tech stack
 
 `React 19` · `Vite 8` · `TypeScript` · `Tailwind CSS v4` · `@sqlite.org/sqlite-wasm` (OPFS) ·
 `@tanstack/react-virtual` · `React Flow` · `Prism.js` · `fflate` · `vite-plugin-pwa`
 
 ---
 
-## 🎨 Credits
+## Credits
 
 The animated header (`docs/hero.svg`) is a hand-written self-contained SVG, and `docs/demo.gif` is
 generated from real screen captures with `scripts/make-demo-gif.mjs` (`gifenc` + `pngjs`).
 
 ---
 
-## 📄 License
+## License
 
 [MIT](LICENSE) © 2026 adce626
