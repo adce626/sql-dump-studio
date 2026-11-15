@@ -13,6 +13,9 @@
 *.zip binary
 *.sqlite binary
 *.db binary
+*.gz binary
+*.tar binary
+*.bak binary
 
 # SQL dumps are text
 *.sql text eol=lf

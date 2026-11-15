@@ -239,6 +239,22 @@ export interface ExecResult {
   error?: string;
 }
 
+/**
+ * Details about a file that could not be opened. The UI uses them to show a
+ * localized explanation and the exact command that converts the file.
+ */
+export interface OpenErrorPayload {
+  code: 'unsupported-format' | 'unsupported-archive' | 'binary-file' | 'corrupt-archive';
+  /** Key of the localized guidance: sqlserver | postgres | customdump | mysql | mssql | binary */
+  format?: string;
+  /** The extension of the file that was rejected. */
+  extension?: string;
+  /** English fallback message. */
+  message?: string;
+  /** Members of an archive that did not contain anything usable. */
+  members?: string[];
+}
+
 export type WorkerRequest =
   | { id: number; type: 'open'; file: File; options: OpenOptions }
   | { id: number; type: 'tables' }
@@ -261,5 +277,5 @@ export type WorkerRequest =
 
 export type WorkerResponse =
   | { kind: 'result'; id: number; ok: true; result: unknown }
-  | { kind: 'result'; id: number; ok: false; error: string }
+  | { kind: 'result'; id: number; ok: false; error: string; payload?: OpenErrorPayload }
   | { kind: 'progress'; id: number; phase: string; pct: number; detail?: string };

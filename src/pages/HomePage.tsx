@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/useI18n';
+import type { TranslationKey } from '../i18n/en';
 import { useData } from '../store/useData';
 import { DropZone } from '../components/DropZone';
 import { ProgressBar } from '../components/ProgressBar';
@@ -12,10 +13,28 @@ import type { Dialect } from '../worker/protocol';
 const ENCODINGS = ['utf-8', 'utf-16le', 'utf-16be', 'windows-1252', 'latin1'];
 const DIALECTS: Dialect[] = ['mysql', 'postgres', 'mssql', 'sqlite', 'generic'];
 
+/** Formats that are opened directly by the worker. */
+const DIRECT_FORMATS = ['.sql', '.sql.gz', '.gz', '.tar', '.tar.gz', '.sqlite', '.sqlite3', '.db', '.txt'];
+
+/** Formats that need a conversion first (the app shows the exact command). */
+const CONVERT_FORMATS = ['.dump', '.bak', '.backup', '.ibd', '.frm', '.mdf', '.ldf'];
+
 export function HomePage() {
   const { t, locale } = useI18n();
-  const { openFile, status, progress, error, file, tables, stats, warnings, sessions, restoreSession, deleteSession } =
-    useData();
+  const {
+    openFile,
+    status,
+    progress,
+    error,
+    errorPayload,
+    file,
+    tables,
+    stats,
+    warnings,
+    sessions,
+    restoreSession,
+    deleteSession,
+  } = useData();
   const navigate = useNavigate();
 
   const [encoding, setEncoding] = useState<string>('auto');
@@ -24,11 +43,18 @@ export function HomePage() {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [packaging, setPackaging] = useState(false);
   const [packageError, setPackageError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const busy = status === 'loading';
 
+  /** Translates a dynamic key (the format guidance). */
+  function tk(key: string): string {
+    return t(key as TranslationKey);
+  }
+
   function handleFile(next: File) {
     setPendingFile(next);
+    setCopied(false);
     void openFile(next, {
       encoding: encoding === 'auto' ? null : encoding,
       dialect: dialect === 'auto' ? 'auto' : (dialect as Dialect),
@@ -50,6 +76,19 @@ export function HomePage() {
     }
   }
 
+  async function copyCommand() {
+    if (!errorPayload) return;
+    const key = errorPayload.format ?? 'binary';
+    const command = tk(`format.${key}.command`);
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
       <header className="animate-fade-up">
@@ -62,9 +101,50 @@ export function HomePage() {
       {error && (
         <div className="card flex items-start gap-3 border-danger/40 bg-danger/10 p-4 text-sm text-danger">
           <IconWarning size={18} className="mt-0.5 shrink-0" />
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="font-bold">{t('errors.openFailed')}</p>
-            <p className="mt-0.5 text-[12.5px] opacity-90">{error}</p>
+            {errorPayload ? (
+              <>
+                <p className="mt-1 text-[13px] font-bold">
+                  {tk(`format.${errorPayload.format ?? 'binary'}.title`)}
+                </p>
+                <p className="mt-0.5 text-[12.5px] opacity-90">
+                  {tk(`format.${errorPayload.format ?? 'binary'}.hint`)}
+                </p>
+                {errorPayload.format !== 'binary' && (
+                  <>
+                    <p className="mt-3 text-[11px] font-bold uppercase tracking-wide opacity-80">
+                      {t('errors.formatCommand')}
+                    </p>
+                    <pre
+                      dir="ltr"
+                      className="mt-1 overflow-x-auto rounded-lg border border-danger/30 bg-surface p-3 text-[11.5px] leading-relaxed text-text"
+                    >
+                      {tk(`format.${errorPayload.format}.command`)}
+                    </pre>
+                    <button type="button" className="btn btn-ghost mt-2" onClick={() => void copyCommand()}>
+                      {copied ? t('errors.formatCopied') : t('errors.formatCopy')}
+                    </button>
+                  </>
+                )}
+                {errorPayload.members && errorPayload.members.length > 0 && (
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-[12px] font-bold opacity-90">
+                      {t('errors.archiveMembers')}
+                    </summary>
+                    <ul className="mt-1 list-disc space-y-0.5 ps-5 text-[11.5px] opacity-80">
+                      {errorPayload.members.slice(0, 30).map((member) => (
+                        <li key={member} dir="ltr">
+                          {member}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </>
+            ) : (
+              <p className="mt-0.5 text-[12.5px] opacity-90">{error}</p>
+            )}
           </div>
         </div>
       )}
@@ -184,6 +264,27 @@ export function HomePage() {
       </div>
 
       <DropZone onFile={handleFile} busy={busy} />
+
+      <section className="card p-4">
+        <h2 className="text-sm font-extrabold text-text">{t('home.formats')}</h2>
+        <p className="mt-0.5 text-[12px] text-muted">{t('home.formatsHint')}</p>
+        <p className="mt-3 text-[11px] font-bold text-muted">{t('home.directFormats')}</p>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {DIRECT_FORMATS.map((ext) => (
+            <span key={ext} className="chip" dir="ltr">
+              {ext}
+            </span>
+          ))}
+        </div>
+        <p className="mt-3 text-[11px] font-bold text-muted">{t('home.convertFormats')}</p>
+        <div className="mt-1.5 flex flex-wrap gap-1.5 opacity-70">
+          {CONVERT_FORMATS.map((ext) => (
+            <span key={ext} className="chip" dir="ltr">
+              {ext}
+            </span>
+          ))}
+        </div>
+      </section>
 
       {sessions.length > 0 && (
         <section className="card p-4">

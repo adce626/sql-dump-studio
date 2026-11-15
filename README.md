@@ -26,7 +26,7 @@ Real capture from the running app, no mock-ups.</sub>
 
 | Feature | What it does |
 |---|---|
-| **Open SQL dumps** | Drag & drop a `.sql` file (MySQL / PostgreSQL / SQL Server / SQLite) or a native `.sqlite` database |
+| **Open many formats** | Drag & drop a `.sql` dump (MySQL / PostgreSQL / SQL Server / SQLite), a gzipped `.sql.gz`, a `.tar` archive, or a native `.sqlite` database — binary backups are detected and show the exact command that converts them |
 | **Spreadsheet-style data grid** | Virtualized rows **and** columns, multi-column sorting, pinned columns, drag-to-resize, auto-fit, density modes, gridline toggle |
 | **Search** | Full-text search (FTS5) across every table, plus per-column quick filters with value counts and inline match highlighting |
 | **Relations** | Interactive ER diagram (declared foreign keys **and** inferred `x_id` to `x.id` links) |
@@ -82,7 +82,28 @@ test/fixtures/duplicates.sql       # duplicate rows + a second version of a tabl
 test/fixtures/wide-table.sql       # 60 columns - for the horizontal virtualization
 test/fixtures/mysql-images.sql     # BLOB images, data-URIs and a PDF
 test/fixtures/shop.sqlite          # native SQLite database (opens straight from the .db file)
+test/fixtures/mysql-shop.sql.gz    # gzip compressed dump (unpacked in the browser)
+test/fixtures/mysql-shop.tar       # tar archive that contains a SQL dump
+test/fixtures/mysql-shop.tar.gz    # gzip compressed tar archive
+test/fixtures/shop-database.tar    # tar archive that contains a native SQLite file
+test/fixtures/sqlserver-backup.bak # binary backup - shows the conversion command
+test/fixtures/plain-dump.dump      # plain SQL text with a .dump extension (still opens)
 ```
+
+---
+
+## Supported file formats
+
+| Format | How it is handled |
+|---|---|
+| `.sql` `.txt` `.ddl` | Parsed as a plain SQL dump (MySQL / PostgreSQL / SQL Server / SQLite / generic) |
+| `.sql.gz` `.gz` | Inflated in the browser with `DecompressionStream`, then parsed as SQL |
+| `.tar` `.tgz` `.tar.gz` | The archive is scanned: the first `.sqlite` member is opened as a database, otherwise every `.sql` member is imported |
+| `.sqlite` `.sqlite3` `.db` | Opened as a native SQLite database (detected by magic bytes) |
+| `.dump` `.bak` `.backup` | Opened as SQL when the file really contains text; otherwise the app shows the `pg_restore` / `sqlcmd` command that converts it |
+| `.ibd` `.frm` `.mdf` `.ldf` | Detected and reported with the exact `mysqldump` / `sqlcmd` command that exports the data |
+
+Every conversion hint is localized (English / Arabic) and the command can be copied with one click.
 
 ---
 
@@ -106,6 +127,7 @@ src/
 |   |-- protocol.ts         # shared request/response contracts
 |   |-- worker.ts           # RPC entry point + session management
 |   |-- importer.ts         # streaming import of a dump into SQLite
+|   |-- formats.ts          # format detection: gzip, tar, native SQLite, backups
 |   |-- queries.ts          # rows, search, relations, stats, analysis, diff
 |   |-- export.ts           # CSV / JSON / NDJSON / SQL / XLSX writers
 |   |-- package.ts          # full ZIP package builder
@@ -122,11 +144,12 @@ src/
 **How it works**
 
 1. The file is read **streaming** (`File.stream()`) inside the worker — no full-file buffering.
-2. It is split into statements, respecting comments, strings, `DELIMITER` and `COPY` blocks.
-3. SQLite tables are created from the `CREATE TABLE` definitions, keeping types, indexes and foreign keys.
-4. Rows are inserted from `INSERT` and `COPY`, converting NULLs, escapes, dates and binary blobs.
-5. An optional **FTS5** index is built for instant full-text search.
-6. The UI then talks to the database through **real SQL** — sorting, filtering, searching and joining.
+2. The format is detected first: a gzip archive is inflated, a tar archive is scanned for its `.sql` / `.sqlite` member, and a native database is opened directly.
+3. It is split into statements, respecting comments, strings, `DELIMITER` and `COPY` blocks.
+4. SQLite tables are created from the `CREATE TABLE` definitions, keeping types, indexes and foreign keys.
+5. Rows are inserted from `INSERT` and `COPY`, converting NULLs, escapes, dates and binary blobs.
+6. An optional **FTS5** index is built for instant full-text search.
+7. The UI then talks to the database through **real SQL** — sorting, filtering, searching and joining.
 
 Everything runs against SQLite compiled to WebAssembly, with the database persisted in **OPFS**
 (Origin Private File System) so a session can be restored the next time you open the app.

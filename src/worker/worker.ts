@@ -1,12 +1,21 @@
 ﻿/// <reference lib="webworker" />
-import { initSqlite, createDb, writeOpfsStream, removeOpfsFile } from './sqlite';
+import { initSqlite, createDb, writeOpfsFile, writeOpfsStream, removeOpfsFile } from './sqlite';
 import { importDump } from './importer';
 import { detectDialect, guessEncoding } from './sql/dialect';
+import {
+  detectFormat,
+  extractGzip,
+  extractTar,
+  guidanceKey,
+  looksLikeText,
+  type Extraction,
+} from './formats';
 import * as Q from './queries';
 import { buildExport } from './export';
 import { buildPackage } from './package';
 import type {
   FileInfo,
+  OpenErrorPayload,
   OpenOptions,
   OpenResult,
   StatementInfo,
@@ -50,6 +59,17 @@ function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   if (typeof err === 'string') return err;
   return String(err);
+}
+
+/** Error that carries structured details so the UI can localize the message. */
+class FormatError extends Error {
+  payload: OpenErrorPayload;
+
+  constructor(payload: OpenErrorPayload) {
+    super(payload.message ?? 'This file cannot be opened.');
+    this.name = 'FormatError';
+    this.payload = payload;
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -131,18 +151,21 @@ function rebuildTables(target: any): TableMeta[] {
  * Opening files
  * ------------------------------------------------------------------ */
 
-function isNativeSqlite(head: Uint8Array): boolean {
-  if (head.length < 16) return false;
-  const magic = 'SQLite format 3\u0000';
-  for (let i = 0; i < magic.length; i++) {
-    if (head[i] !== magic.charCodeAt(i)) return false;
-  }
-  return true;
-}
-
-async function openDump(file: File, options: OpenOptions, stamp: number): Promise<OpenResult> {
-  progress('reading', 2, file.name);
-  const sample = new Uint8Array(await file.slice(0, 128 * 1024).arrayBuffer());
+/** Opens a plain SQL dump (optionally from an unpacked archive). */
+async function openDump(
+  file: File,
+  options: OpenOptions,
+  stamp: number,
+  source?: ReadableStream<Uint8Array>,
+  totalSize?: number,
+  sampleOverride?: Uint8Array,
+  displayName?: string,
+): Promise<OpenResult> {
+  const label = displayName ?? file.name;
+  const size = totalSize ?? file.size;
+  progress('reading', 2, label);
+  const sample =
+    sampleOverride ?? new Uint8Array(await file.slice(0, 128 * 1024).arrayBuffer());
   const guess = guessEncoding(sample);
   const encoding = options.encoding && options.encoding !== 'auto' ? options.encoding : guess.encoding;
 
@@ -172,6 +195,8 @@ async function openDump(file: File, options: OpenOptions, stamp: number): Promis
       dialect,
       buildSearchIndex: options.buildSearchIndex ?? true,
       onlyTables: options.onlyTables ?? null,
+      source,
+      totalSize: size,
     },
     progress,
   );
@@ -181,8 +206,8 @@ async function openDump(file: File, options: OpenOptions, stamp: number): Promis
   warnings = outcome.warnings;
 
   fileInfo = {
-    name: file.name,
-    size: file.size,
+    name: label,
+    size,
     encoding,
     dialect,
     importedAt: stamp,
@@ -193,8 +218,8 @@ async function openDump(file: File, options: OpenOptions, stamp: number): Promis
 
   writeMeta(db, {
     sessionId: id,
-    name: file.name,
-    size: String(file.size),
+    name: label,
+    size: String(size),
     encoding,
     dialect,
     importedAt: String(stamp),
@@ -237,26 +262,65 @@ async function openNativeSqlite(file: File, stamp: number): Promise<OpenResult> 
     dbMode = 'memory';
   }
 
+  return finalizeNative(file.name, file.size, stamp);
+}
+
+/** Opens a native SQLite database that was extracted from an archive. */
+async function openNativeSqliteBytes(bytes: Uint8Array, name: string, stamp: number): Promise<OpenResult> {
+  const id = newSessionId();
+  const fileName = sessionFileName(id);
+  sessionId = id;
+
+  const wrote = await writeOpfsFile(fileName, bytes);
+  if (wrote) {
+    try {
+      db = new sqlite3.oo1.OpfsDb('/' + fileName);
+      db.exec('SELECT 1');
+      dbMode = 'opfs';
+    } catch (err) {
+      console.warn('Could not open the native database through OPFS', err);
+      db = null;
+    }
+  }
+
+  if (!db) {
+    progress('loading', 30);
+    db = new sqlite3.oo1.DB(':memory:', 'ct');
+    try {
+      const ptr = sqlite3.wasm.allocFromTypedArray(bytes);
+      const rc = sqlite3.capi.sqlite3_deserialize(db.pointer, 'main', ptr, bytes.length, bytes.length, 1);
+      if (rc !== 0) throw new Error('sqlite3_deserialize failed');
+    } catch (err) {
+      throw new Error(`This database could not be opened: ${errorMessage(err)}`);
+    }
+    dbMode = 'memory';
+  }
+
+  return finalizeNative(name, bytes.length, stamp);
+}
+
+/** Shared tail of both native SQLite open paths. */
+function finalizeNative(name: string, size: number, stamp: number): OpenResult {
   tables = Q.inspectSqliteSchema(db);
   statements = [];
   warnings = [];
 
   fileInfo = {
-    name: file.name,
-    size: file.size,
+    name,
+    size,
     encoding: 'binary',
     dialect: 'sqlite',
     importedAt: stamp,
     mode: dbMode,
     isNativeSqlite: true,
-    sessionId: id,
+    sessionId: sessionId!,
   };
 
   if (dbMode === 'opfs') {
     writeMeta(db, {
-      sessionId: id,
-      name: file.name,
-      size: String(file.size),
+      sessionId: sessionId!,
+      name,
+      size: String(size),
       encoding: 'binary',
       dialect: 'sqlite',
       importedAt: String(stamp),
@@ -368,9 +432,65 @@ async function handle(msg: WorkerRequest): Promise<unknown> {
       await closeCurrent();
       sqlite3 = await initSqlite();
       const stamp = Date.now();
-      const head = new Uint8Array(await msg.file.slice(0, 16).arrayBuffer());
-      if (isNativeSqlite(head)) return await openNativeSqlite(msg.file, stamp);
-      return await openDump(msg.file, msg.options ?? {}, stamp);
+      const file = msg.file;
+      const options = msg.options ?? {};
+      const head = new Uint8Array(await file.slice(0, 512).arrayBuffer());
+      const format = detectFormat(file.name, head);
+
+      // A native SQLite database: open it directly.
+      if (format.kind === 'sqlite') {
+        return await openNativeSqlite(file, stamp);
+      }
+
+      // gzip / tar archives: unpack them first.
+      if (format.kind === 'gzip' || format.kind === 'tar') {
+        progress('reading', 4, file.name);
+        const extracted: Extraction =
+          format.kind === 'gzip' ? await extractGzip(file) : await extractTar(file);
+        if (extracted.kind === 'error') {
+          throw new FormatError({
+            code: extracted.code ?? 'unsupported-archive',
+            format: guidanceKey(format.kind),
+            extension: format.extension,
+            message: extracted.message,
+            members: extracted.members,
+          });
+        }
+        if (extracted.kind === 'sqlite') {
+          return await openNativeSqliteBytes(
+            extracted.bytes!,
+            extracted.name ?? file.name,
+            stamp,
+          );
+        }
+        return await openDump(
+          file,
+          options,
+          stamp,
+          extracted.stream,
+          extracted.totalSize,
+          extracted.sample,
+          extracted.name ?? file.name,
+        );
+      }
+
+      // Plain SQL dump.
+      if (format.kind === 'sql') {
+        return await openDump(file, options, stamp);
+      }
+
+      // Proprietary formats (.bak, .dump, .backup, .ibd, .frm, .mdf, .ldf):
+      // they can still be opened when they really contain plain SQL text.
+      if (looksLikeText(head)) {
+        return await openDump(file, options, stamp);
+      }
+
+      throw new FormatError({
+        code: 'unsupported-format',
+        format: guidanceKey(format.kind),
+        extension: format.extension,
+        message: `A ${format.extension || 'binary'} file cannot be opened directly in the browser.`,
+      });
     }
     case 'tables':
       return Q.listTables(context());
@@ -435,6 +555,10 @@ scope.onmessage = async (event: MessageEvent<WorkerRequest>) => {
     const result = await handle(msg);
     post({ kind: 'result', id: msg.id, ok: true, result });
   } catch (err) {
+    if (err instanceof FormatError) {
+      post({ kind: 'result', id: msg.id, ok: false, error: err.message, payload: err.payload });
+      return;
+    }
     post({ kind: 'result', id: msg.id, ok: false, error: errorMessage(err) });
   }
 };

@@ -15,6 +15,10 @@ export interface ImportOptions {
   dialect: Dialect;
   buildSearchIndex: boolean;
   onlyTables: string[] | null;
+  /** Stream with the SQL bytes. Defaults to the file itself (used for .gz/.tar). */
+  source?: ReadableStream<Uint8Array>;
+  /** Size of the SQL payload in bytes (used for the progress bar). */
+  totalSize?: number;
 }
 
 export interface ImportOutcome {
@@ -507,9 +511,9 @@ export async function importDump(
   });
 
   const decoder = new TextDecoder(opts.encoding);
-  const reader = opts.file.stream().getReader();
+  const reader = (opts.source ?? opts.file.stream()).getReader();
   let bytesRead = 0;
-  const total = opts.file.size || 1;
+  const total = opts.totalSize ?? opts.file.size ?? 1;
 
   for (;;) {
     const { done, value } = await reader.read();

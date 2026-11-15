@@ -2,6 +2,7 @@ import { createContext } from 'react';
 import type {
   FileInfo,
   GlobalStats,
+  OpenErrorPayload,
   OpenOptions,
   SessionInfo,
   StatementInfo,
@@ -18,6 +19,8 @@ export interface DataValue {
   warnings: string[];
   status: DataStatus;
   error: string | null;
+  /** Details about a file that could not be opened (format guidance). */
+  errorPayload: OpenErrorPayload | null;
   progress: { phase: string; pct: number; detail?: string } | null;
   openFile: (file: File, options: OpenOptions) => Promise<void>;
   closeFile: () => Promise<void>;

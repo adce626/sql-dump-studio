@@ -43,7 +43,8 @@ export const en = {
   'common.untitled': 'Untitled',
 
   'home.title': 'Open a SQL dump',
-  'home.subtitle': 'Drop a .sql file (or a .sqlite database) here. Everything is parsed inside your browser — nothing is uploaded.',
+  'home.subtitle':
+    'Drop a SQL dump, a gzip / tar archive or a .sqlite database here. Everything is parsed inside your browser — nothing is uploaded.',
   'home.drop': 'Drop the file here',
   'home.browse': 'Choose a file',
   'home.encoding': 'Encoding',
@@ -55,7 +56,8 @@ export const en = {
   'home.opening': 'Reading file…',
   'home.privacy': 'Your file never leaves this device.',
   'home.fileInfo': 'File information',
-  'home.hint': 'Supported: MySQL / PostgreSQL / SQLite / SQL Server dumps, including COPY blocks and multi-row INSERTs.',
+  'home.hint':
+    'Supported: MySQL / PostgreSQL / SQLite / SQL Server dumps, including COPY blocks and multi-row INSERTs. Compressed .sql.gz files and .tar archives are unpacked automatically.',
   'home.recent': 'Recent files',
   'home.recentHint': 'Your files stay in this browser — reopen them without uploading them again.',
   'home.restore': 'Restore',
@@ -63,6 +65,11 @@ export const en = {
   'home.package': 'Export ZIP package',
   'home.packaging': 'Building the package…',
   'home.packageHint': 'Full package: schema.sql + CSV data + images + manifest.json',
+  'home.formats': 'Supported formats',
+  'home.formatsHint':
+    'SQL dumps, gzip and tar archives and SQLite databases are opened directly. Every other format shows the exact command that converts it.',
+  'home.directFormats': 'Opened directly',
+  'home.convertFormats': 'Needs a conversion first',
 
   'tables.title': 'Tables',
   'tables.subtitle': 'Every table found in the dump.',
@@ -253,6 +260,38 @@ export const en = {
   'errors.noDatabase': 'No database is open. Upload a file first.',
   'errors.openFailed': 'The file could not be opened.',
   'errors.exportFailed': 'The export failed.',
+  'errors.formatTitle': 'This format needs a conversion first',
+  'errors.formatCommand': 'Convert it with this command',
+  'errors.formatCopy': 'Copy the command',
+  'errors.formatCopied': 'Copied',
+  'errors.archiveMembers': 'Files inside the archive',
+  'format.sqlserver.title': 'SQL Server backup (.bak)',
+  'format.sqlserver.hint':
+    'A .bak file is a binary backup. Restore it on a SQL Server instance, then export the tables as text and open those files here.',
+  'format.sqlserver.command': `sqlcmd -S localhost -Q "RESTORE DATABASE mydb FROM DISK='C:\\in\\backup.bak' WITH MOVE 'mydb' TO 'C:\\SQLData\\mydb.mdf', MOVE 'mydb_log' TO 'C:\\SQLData\\mydb_log.ldf'"
+sqlcmd -S localhost -d mydb -E -W -s"|" -Q "SELECT * FROM dbo.YourTable" -o table.csv`,
+  'format.postgres.title': 'PostgreSQL custom dump (.backup)',
+  'format.postgres.hint':
+    'This is the PostgreSQL custom format. Turn it into a plain SQL script with pg_restore, then open the script here.',
+  'format.postgres.command': 'pg_restore --format=custom --file=dump.sql --dbname=mydb backup.backup',
+  'format.customdump.title': 'Binary dump (.dump)',
+  'format.customdump.hint':
+    'This is a binary dump (PostgreSQL custom format or a SQL Server backup). Convert it into a plain SQL script first.',
+  'format.customdump.command': `pg_restore --format=custom --file=dump.sql --dbname=mydb dump.dump
+sqlcmd -S localhost -Q "RESTORE DATABASE mydb FROM DISK='C:\\in\\dump.bak' WITH MOVE 'mydb' TO 'C:\\SQLData\\mydb.mdf'"`,
+  'format.mysql.title': 'MySQL table file (.ibd / .frm)',
+  'format.mysql.hint':
+    'These are InnoDB / MyISAM table files. They have to be exported from the MySQL server that owns them.',
+  'format.mysql.command': `mysqldump --no-data --skip-triggers --databases mydb > schema.sql
+mysqldump --no-create-info --skip-triggers --databases mydb > data.sql`,
+  'format.mssql.title': 'SQL Server database file (.mdf / .ldf)',
+  'format.mssql.hint':
+    'Attach the database to a SQL Server instance, then export the tables as text and open those files here.',
+  'format.mssql.command': `sqlcmd -S localhost -Q "CREATE DATABASE mydb ON (FILENAME='C:\\data\\mydb.mdf'), (FILENAME='C:\\data\\mydb_log.ldf') FOR ATTACH"
+sqlcmd -S localhost -d mydb -E -W -s"|" -Q "SELECT * FROM dbo.YourTable" -o table.csv`,
+  'format.binary.title': 'Unsupported file',
+  'format.binary.hint':
+    'This file is neither a SQL dump nor a SQLite database, so it cannot be opened here. Export it as a .sql dump or as a .sqlite file first.',
 } as const;
 
 export type TranslationKey = keyof typeof en;

@@ -6,11 +6,12 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { client, type ProgressInfo } from '../lib/client';
+import { client, WorkerError, type ProgressInfo } from '../lib/client';
 import { loadSessions, registerSession, unregisterSession } from '../lib/sessions';
 import type {
   FileInfo,
   GlobalStats,
+  OpenErrorPayload,
   OpenOptions,
   SessionInfo,
   StatementInfo,
@@ -26,6 +27,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [status, setStatus] = useState<DataStatus>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [errorPayload, setErrorPayload] = useState<OpenErrorPayload | null>(null);
   const [progress, setProgress] = useState<ProgressInfo | null>(null);
   const [sessions, setSessions] = useState<SessionInfo[]>(() => loadSessions());
   const mounted = useRef(true);
@@ -94,6 +96,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     async (nextFile: File, options: OpenOptions) => {
       setStatus('loading');
       setError(null);
+      setErrorPayload(null);
       setProgress({ phase: 'reading', pct: 0 });
       try {
         const result = await client.open(nextFile, options);
@@ -103,6 +106,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (!mounted.current) return;
         setStatus('error');
         setError(err instanceof Error ? err.message : String(err));
+        setErrorPayload(err instanceof WorkerError ? err.payload ?? null : null);
         setProgress(null);
       }
     },
@@ -113,6 +117,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     async (id: string) => {
       setStatus('loading');
       setError(null);
+      setErrorPayload(null);
       setProgress({ phase: 'restoring', pct: 10 });
       try {
         const result = await client.restoreSession(id);
@@ -122,6 +127,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (!mounted.current) return;
         setStatus('idle');
         setError(err instanceof Error ? err.message : String(err));
+        setErrorPayload(null);
         setProgress(null);
         // The session may still be intact (for example when the database file
         // is locked by another tab), so keep it in the list and let the user
@@ -166,6 +172,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setWarnings([]);
     setStatus('idle');
     setError(null);
+    setErrorPayload(null);
   }, []);
 
   const value = useMemo<DataValue>(
@@ -177,6 +184,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       warnings,
       status,
       error,
+      errorPayload,
       progress,
       openFile,
       closeFile,
@@ -194,6 +202,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       warnings,
       status,
       error,
+      errorPayload,
       progress,
       openFile,
       closeFile,

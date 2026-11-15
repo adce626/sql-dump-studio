@@ -45,7 +45,8 @@ export const ar: Dictionary = {
   'common.untitled': 'بدون اسم',
 
   'home.title': 'افتح ملف SQL',
-  'home.subtitle': 'اسحب ملف .sql (أو قاعدة .sqlite) إلى هنا. كل شيء يُحلل داخل متصفحك — لا يتم رفع أي شيء.',
+  'home.subtitle':
+    'أفلت ملف SQL أو أرشيف gzip / tar أو قاعدة .sqlite هنا. كل شيء يُحلل داخل متصفحك — لا يتم رفع أي شيء.',
   'home.drop': 'أفلت الملف هنا',
   'home.browse': 'اختر ملفًا',
   'home.encoding': 'الترميز',
@@ -57,7 +58,8 @@ export const ar: Dictionary = {
   'home.opening': 'جارٍ قراءة الملف…',
   'home.privacy': 'ملفك لا يغادر هذا الجهاز.',
   'home.fileInfo': 'معلومات الملف',
-  'home.hint': 'يدعم: MySQL / PostgreSQL / SQLite / SQL Server، بما في ذلك كتل COPY والإدخالات متعددة الصفوف.',
+  'home.hint':
+    'يدعم: MySQL / PostgreSQL / SQLite / SQL Server، بما في ذلك كتل COPY والإدخالات متعددة الصفوف. ملفات ‎.sql.gz المضغوطة وأرشيفات ‎.tar تُفك تلقائيًا.',
   'home.recent': 'الملفات الأخيرة',
   'home.recentHint': 'ملفاتك محفوظة داخل المتصفح — افتحها مباشرة بدون رفعها من جديد.',
   'home.restore': 'استعادة',
@@ -65,6 +67,11 @@ export const ar: Dictionary = {
   'home.package': 'تصدير حزمة ZIP',
   'home.packaging': 'جارٍ تجهيز الحزمة…',
   'home.packageHint': 'حزمة كاملة: schema.sql + بيانات CSV + الصور + manifest.json',
+  'home.formats': 'الصيغ المدعومة',
+  'home.formatsHint':
+    'ملفات SQL وملفات gzip و tar وقواعد SQLite تُفتح مباشرة. أي صيغة أخرى يعرض لك الأمر الدقيق لتحويلها.',
+  'home.directFormats': 'تُفتح مباشرة',
+  'home.convertFormats': 'تحتاج تحويلًا أولًا',
 
   'tables.title': 'الجداول',
   'tables.subtitle': 'كل الجداول الموجودة في الملف.',
@@ -255,4 +262,36 @@ export const ar: Dictionary = {
   'errors.noDatabase': 'لا توجد قاعدة بيانات مفتوحة. ارفع ملفًا أولًا.',
   'errors.openFailed': 'تعذّر فتح الملف.',
   'errors.exportFailed': 'فشل التصدير.',
+  'errors.formatTitle': 'هذه الصيغة تحتاج تحويلًا أولًا',
+  'errors.formatCommand': 'حوّلها بهذا الأمر',
+  'errors.formatCopy': 'نسخ الأمر',
+  'errors.formatCopied': 'تم النسخ',
+  'errors.archiveMembers': 'الملفات داخل الأرشيف',
+  'format.sqlserver.title': 'نسخة احتياطية من SQL Server (.bak)',
+  'format.sqlserver.hint':
+    'ملف ‎.bak نسخة احتياطية ثنائية. استعدها على خادم SQL Server، ثم صدّر الجداول كنصوص وافتحها هنا.',
+  'format.sqlserver.command': `sqlcmd -S localhost -Q "RESTORE DATABASE mydb FROM DISK='C:\\in\\backup.bak' WITH MOVE 'mydb' TO 'C:\\SQLData\\mydb.mdf', MOVE 'mydb_log' TO 'C:\\SQLData\\mydb_log.ldf'"
+sqlcmd -S localhost -d mydb -E -W -s"|" -Q "SELECT * FROM dbo.YourTable" -o table.csv`,
+  'format.postgres.title': 'نسخة PostgreSQL بصيغة مخصصة (.backup)',
+  'format.postgres.hint':
+    'هذه الصيغة المخصصة لـ PostgreSQL. حوّلها إلى سكربت SQL نصي عبر pg_restore ثم افتح السكربت هنا.',
+  'format.postgres.command': 'pg_restore --format=custom --file=dump.sql --dbname=mydb backup.backup',
+  'format.customdump.title': 'نسخة ثنائية (.dump)',
+  'format.customdump.hint':
+    'هذه نسخة ثنائية (الصيغة المخصصة لـ PostgreSQL أو نسخة SQL Server). حوّلها إلى سكربت SQL نصي أولًا.',
+  'format.customdump.command': `pg_restore --format=custom --file=dump.sql --dbname=mydb dump.dump
+sqlcmd -S localhost -Q "RESTORE DATABASE mydb FROM DISK='C:\\in\\dump.bak' WITH MOVE 'mydb' TO 'C:\\SQLData\\mydb.mdf'"`,
+  'format.mysql.title': 'ملف جدول MySQL (.ibd / .frm)',
+  'format.mysql.hint':
+    'هذه ملفات جداول InnoDB / MyISAM. يجب تصديرها من خادم MySQL الذي يملكها.',
+  'format.mysql.command': `mysqldump --no-data --skip-triggers --databases mydb > schema.sql
+mysqldump --no-create-info --skip-triggers --databases mydb > data.sql`,
+  'format.mssql.title': 'ملف قاعدة SQL Server (.mdf / .ldf)',
+  'format.mssql.hint':
+    'اربط القاعدة بخادم SQL Server، ثم صدّر الجداول كنصوص وافتحها هنا.',
+  'format.mssql.command': `sqlcmd -S localhost -Q "CREATE DATABASE mydb ON (FILENAME='C:\\data\\mydb.mdf'), (FILENAME='C:\\data\\mydb_log.ldf') FOR ATTACH"
+sqlcmd -S localhost -d mydb -E -W -s"|" -Q "SELECT * FROM dbo.YourTable" -o table.csv`,
+  'format.binary.title': 'صيغة غير مدعومة',
+  'format.binary.hint':
+    'هذا الملف ليس ملف SQL ولا قاعدة SQLite، لذلك لا يمكن فتحه هنا. صدّره كملف ‎.sql أو كقاعدة ‎.sqlite أولًا.',
 };

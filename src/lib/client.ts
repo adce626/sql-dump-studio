@@ -5,6 +5,7 @@ import type {
   ExecResult,
   FileInfo,
   GlobalStats,
+  OpenErrorPayload,
   OpenOptions,
   OpenResult,
   RelationEdge,
@@ -37,6 +38,17 @@ type Pending = {
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
+/** Error raised by the worker; it may carry details about the file format. */
+export class WorkerError extends Error {
+  payload?: OpenErrorPayload;
+
+  constructor(message: string, payload?: OpenErrorPayload) {
+    super(message);
+    this.name = 'WorkerError';
+    this.payload = payload;
+  }
+}
+
 class WorkerClient {
   private worker: Worker | null = null;
   private seq = 0;
@@ -56,7 +68,7 @@ class WorkerClient {
       if (!entry) return;
       this.pending.delete(message.id);
       if (message.ok) entry.resolve(message.result);
-      else entry.reject(new Error(message.error));
+      else entry.reject(new WorkerError(message.error, message.payload));
     };
     worker.onerror = (event) => {
       const error = new Error(event.message || 'The database worker crashed.');

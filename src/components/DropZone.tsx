@@ -49,7 +49,10 @@ export function DropZone({ onFile, accept, busy }: DropZoneProps) {
       <input
         ref={inputRef}
         type="file"
-        accept={accept ?? '.sql,.sqlite,.db,.dump,.txt'}
+        accept={
+          accept ??
+          '.sql,.sql.gz,.gz,.tar,.tgz,.tar.gz,.sqlite,.sqlite3,.db,.dump,.bak,.backup,.ibd,.frm,.mdf,.ldf,.txt'
+        }
         className="hidden"
         onChange={(event) => {
           const file = event.target.files?.[0];
