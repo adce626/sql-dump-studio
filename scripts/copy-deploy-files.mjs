@@ -1,7 +1,8 @@
 // Copies the static-hosting helper files into the production bundle so the
 // published folder is self-contained:
-//   deploy/_headers   -> dist/_headers    (Netlify / Cloudflare Pages)
-//   deploy/vercel.json-> dist/vercel.json (Vercel)
+//   deploy/_headers          -> dist/_headers          (Netlify / Cloudflare Pages)
+//   deploy/vercel-static.json-> dist/vercel.json       (Vercel, prebuilt folder)
+//   deploy/vercel.json       -> dist/vercel-source.json (Vercel, deploying from source)
 import { cpSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,10 +17,15 @@ if (!existsSync(dist)) {
 
 mkdirSync(dist, { recursive: true });
 
-for (const name of ['_headers', 'vercel.json']) {
-  const from = join(root, 'deploy', name);
+const copies = [
+  { from: join(root, 'deploy', '_headers'), to: join(dist, '_headers') },
+  { from: join(root, 'deploy', 'vercel-static.json'), to: join(dist, 'vercel.json') },
+  { from: join(root, 'deploy', 'vercel.json'), to: join(dist, 'vercel-source.json') },
+];
+
+for (const { from, to } of copies) {
   if (existsSync(from)) {
-    cpSync(from, join(dist, name));
-    console.log(`copied deploy/${name} -> dist/${name}`);
+    cpSync(from, to);
+    console.log(`copied ${from.replace(root + '\\', '')} -> ${to.replace(root + '\\', '')}`);
   }
 }

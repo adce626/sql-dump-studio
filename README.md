@@ -108,7 +108,7 @@ Ready-made configuration for the common hosts lives in `deploy/`:
 |---|---|
 | Netlify | Import the repository. Build command `npm run build`, publish directory `dist`. `deploy/netlify.toml` and `deploy/_headers` are already included. |
 | Cloudflare Pages | Build command `npm run build`, output directory `dist`. Upload `deploy/_headers` as `_headers` next to `index.html`. |
-| Vercel | Import the repository. `deploy/vercel.json` sets the build command, the output directory and the headers. |
+| Vercel | Import the repository: the root `vercel.json` sets the build command, the output directory and the headers. Already-deployed builds can be published from the command line with `npx vercel --prod` (the release folder contains a ready `vercel.json`). Drag-and-drop uploads ignore that file and run in memory mode. |
 | GitHub Pages | Enable Pages with "GitHub Actions" as the source; the `Deploy to GitHub Pages` workflow publishes `dist/` on every push. |
 | Shared hosting / cPanel | Upload the **contents** of `dist/` into `public_html`. Every asset path is relative, so the app also works from a sub-folder. |
 
@@ -116,6 +116,10 @@ The `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy:
 headers are part of every configuration. They are what keeps the imported database on disk
 (OPFS) instead of in memory. Hosts that do not allow custom headers (GitHub Pages, for
 example) still run the whole app - only the "remember the last opened file" feature is lost.
+
+A quick way to check which mode a deployment uses: open the app, load a file and look at the
+storage badge next to the file name. It reads **OPFS** when the headers are applied and
+**RAM** when they are not.
 
 ---
 
